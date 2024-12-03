@@ -107,7 +107,7 @@ export const post = defineType({
           name: 'codeBlock',
           title: 'Code Block',
           options: {
-            language: 'javascript', // Default language
+            language: 'javascript',
             languageAlternatives: [
               { title: 'JavaScript', value: 'javascript' },
               { title: 'TypeScript', value: 'typescript' },
@@ -163,6 +163,80 @@ export const post = defineType({
               type: 'string',
             }),
           ],
+        },
+        {
+          type: 'object',
+          name: 'youtubeVideo',
+          title: 'YouTube Video',
+          fields: [
+            defineField({
+              name: 'url',
+              title: 'YouTube Video URL',
+              type: 'url',
+              validation: (Rule) => Rule.required().custom((url) => {
+                // Ensure url is a string
+                if (typeof url !== 'string') {
+                  return 'Please enter a valid YouTube video URL';
+                }
+                
+                const youtubeRegex = /^(https?\:\/\/)?(www\.youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9\-_]+)/;
+                return youtubeRegex.test(url) ? true : 'Please enter a valid YouTube video URL';
+              }),
+            }),
+            defineField({
+              name: 'title',
+              title: 'Video Title',
+              type: 'string',
+            }),
+            defineField({
+              name: 'caption',
+              title: 'Video Caption',
+              type: 'string',
+            }),
+            defineField({
+              name: 'startTime',
+              title: 'Start Time (optional)',
+              type: 'number',
+              description: 'Start time in seconds (optional)',
+              validation: (Rule) => Rule.min(0),
+            }),
+            defineField({
+              name: 'stopTime',
+              title: 'Stop Time (optional)',
+              type: 'number',
+              description: 'Stop time in seconds (optional)',
+              validation: (Rule) => Rule.custom((stopTime, context) => {
+                // Type-safe check for start time
+                const startTime = context.parent && typeof context.parent === 'object' 
+                  ? (context.parent as { startTime?: number }).startTime 
+                  : undefined;
+                
+                // If start time is provided and stop time is provided
+                if (startTime !== undefined && stopTime !== undefined) {
+                  // Ensure both are numbers and stop time is greater
+                  return (typeof stopTime === 'number' && typeof startTime === 'number' && stopTime > startTime)
+                    ? true 
+                    : 'Stop time must be greater than start time';
+                }
+                
+                return true;
+              }),
+            }),
+          ],
+          preview: {
+            select: {
+              title: 'title',
+              url: 'url',
+            },
+            prepare(selection) {
+              const { title, url } = selection;
+              return {
+                title: title || 'YouTube Video',
+                subtitle: url,
+                media: () => '🎥',
+              };
+            },
+          },
         },
       ],
     }),
